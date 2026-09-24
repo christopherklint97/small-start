@@ -9,6 +9,7 @@ A calm, installable Pomodoro-style focus timer designed to make starting easier.
 - One small next-action field, a parking lot for distracting thoughts, and a 60-second pause before an impulsive scroll.
 - Optional completion sound and browser notifications; offline shell, installable manifest, local fonts and icons, and responsive layout.
 - State is stored in this browser's `localStorage`, on this device only. Clearing site data erases it.
+- Light and dark themes follow the device setting automatically; no theme preference is stored.
 
 ## Run locally
 
