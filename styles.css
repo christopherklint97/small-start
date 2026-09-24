@@ -47,3 +47,6 @@
   .icon-button{background:#354837;color:var(--ink)}
   .toggle-row input{accent-color:#c4db9f}
 }
+/* iOS Safari zooms a focused field when its text is smaller than 16 CSS px.
+   Keep page pinch-zoom available; size the editable fields instead. */
+.task-section input,.capture-form input,.settings-grid input{font-size:16px}
