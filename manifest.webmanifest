@@ -1,0 +1,14 @@
+{
+  "name": "Small Start — ADHD-friendly focus timer",
+  "short_name": "Small Start",
+  "description": "A calm focus timer with small starts and distraction capture.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f4ee",
+  "theme_color": "#f5f4ee",
+  "icons": [
+    { "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
