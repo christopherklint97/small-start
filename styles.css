@@ -3,7 +3,7 @@
 /* Keep touch controls usable without relying on visual size alone. */
 .text-button,.inline-link{display:inline-flex;align-items:center;min-height:44px}.mode-tabs button{min-height:44px}.capture-list button{min-width:44px;min-height:44px}.icon-button{width:44px;height:44px}
 
-/* Follow the device theme; the timer's green remains a calm focal surface. */
+/* A distinct night surface: the timer is a soft illuminated workspace. */
 @media (prefers-color-scheme: dark){
   :root{color-scheme:dark;--paper:#171e1a;--ink:#ecf2e9;--muted:#abb9a9;--line:#405044;--dark:#2b3c30;--white:#202b23;background:var(--paper)}
   .eyebrow,.section-number,.side-eyebrow,.strategy-index{color:#c4db9f}
@@ -16,11 +16,19 @@
   .task-section input::placeholder,.capture-form input::placeholder{color:#a0b09f}
   .task-section input:focus,.capture-form input:focus{border-color:#c5df99;box-shadow:0 0 0 3px #71914955}
   .text-button,.inline-link{color:var(--ink);text-decoration-color:#9ab97b}
-  .timer-card{background:var(--dark)}
-  .ring-track{stroke:#516650}
-  .mode-tabs{border-color:#738971}
-  .mode-tabs button{color:#c6d3c2}
-  .timer-card .mode-tabs button.active{background:#e4edcf;color:#28392a}
+  .timer-card{background:#dbe9bd;color:#203021}
+  .timer-card:before{border-color:#28432919}
+  .ring-track{stroke:#a5bb91}
+  .ring-progress{stroke:#2f5b38}
+  #timer-overline,.round-label{color:#3c6340}
+  #timer-caption,.timer-message{color:#455f43}
+  .mode-tabs{border-color:#93ab84}
+  .mode-tabs button{color:#38513a}
+  .timer-card .mode-tabs button.active{background:#25412b;color:#eef6e4}
+  .timer-card .button-primary{background:#25412b;color:#eef6e4}
+  .timer-card .button-primary:hover{background:#355a3b}
+  .timer-card .button-quiet{border-color:#809977;color:#25412b}
+  .timer-card .button-quiet:hover{background:#c5d8aa}
   .capture-form button{background:#bfd895;color:#233526}
   .capture-form button:hover{background:#dceda6}
   .capture-list li{background:#2b392d}
