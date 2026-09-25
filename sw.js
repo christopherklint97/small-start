@@ -1,4 +1,4 @@
-const CACHE = 'small-start-v11';
+const CACHE = 'small-start-v12';
 const SHELL = ['./', './index.html', './styles.css', './app.js', './timer.js', './manifest.webmanifest', './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png', './fonts/dm-sans-400.ttf', './fonts/dm-sans-700.ttf', './fonts/manrope-700.ttf', './fonts/manrope-800.ttf'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => Promise.all(SHELL.map(async path => {

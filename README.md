@@ -7,7 +7,7 @@ A calm, installable Pomodoro-style focus timer designed to make starting easier.
 - Adjustable focus, short-break, and long-break intervals (25/5/15 minutes by default); a two-minute start option.
 - Wall-clock-based timer that survives refreshes and background tabs, with pause, reset, skip, and explicit next-round starts. A long break follows four completed focus rounds.
 - One small next-action field, a parking lot for distracting thoughts, and a 60-second pause before an impulsive scroll.
-- Optional completion sound and browser notifications; offline shell, installable manifest, local fonts and icons, and responsive layout.
+- Optional completion sound and notifications while the page is running; offline shell, installable manifest, local fonts and icons, and responsive layout.
 - State is stored in this browser's `localStorage`, on this device only. Clearing site data erases it.
 - Light and dark themes follow the device setting automatically; no theme preference is stored.
 
@@ -21,7 +21,7 @@ Open <http://127.0.0.1:4173>. Run `npm test` for timer unit tests. The PWA requi
 
 ## Install
 
-On a supported browser, open the site over HTTPS, then choose **Install app** / **Add to Home Screen** from the browser menu. iPhone users can use Safari’s Share → Add to Home Screen. Notifications are opt-in and not guaranteed when the browser is closed. This app cannot block distracting websites or other apps; use your device’s app limits and notification settings for stronger boundaries.
+On a supported browser, open the site over HTTPS, then choose **Install app** / **Add to Home Screen** from the browser menu. iPhone users can use Safari’s Share → Add to Home Screen. Notifications are opt-in. The app uses service-worker notifications while its timer JavaScript is running, but iOS can suspend it in the background and no notification will arrive when the app is closed. Reliable background completion alerts require a server to send Web Push to an installed Home Screen app; GitHub Pages alone cannot do that. This app cannot block distracting websites or other apps; use your device’s app limits and notification settings for stronger boundaries.
 
 ## Why these strategies?
 

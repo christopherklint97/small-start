@@ -31,11 +31,16 @@ function beep() {
     }
   } catch { /* audio is best effort */ }
 }
-function notifyCompletion(mode) {
+async function notifyCompletion(mode) {
   beep();
   if ('Notification' in window && Notification.permission === 'granted') {
-    try { new Notification(mode === 'focus' ? 'Focus round complete' : 'Break complete', {
-      body: mode === 'focus' ? 'Take a real break. You showed up.' : 'Ready for one small next step?', icon: './icons/icon-192.png' }); } catch { /* optional */ }
+    try {
+      const registration = await navigator.serviceWorker?.ready;
+      const title = mode === 'focus' ? 'Focus round complete' : 'Break complete';
+      const options = { body: mode === 'focus' ? 'Take a real break. You showed up.' : 'Ready for one small next step?', icon: './icons/icon-192.png' };
+      if (registration?.showNotification) await registration.showNotification(title, options);
+      else new Notification(title, options);
+    } catch { /* optional */ }
   }
 }
 async function syncWakeLock() {
@@ -63,7 +68,7 @@ function renderTimer() {
   $('round-label').textContent = `ROUND ${state.completed.length % 4 + (state.mode === 'focus' ? 1 : 0) || 4} OF 4`;
   const action = state.status === 'running' ? 'Pause' : state.status === 'paused' ? 'Keep going' : state.status === 'complete' ? `Start ${nextMode(state) === 'focus' ? 'next focus' : nextMode(state) === 'long' ? 'long break' : 'short break'}` : state.mode === 'focus' ? 'Start focusing' : 'Start break';
   $('main-action-label').textContent = action;
-  $('reset-button').disabled = state.status === 'complete';
+  $('reset-button').disabled = false;
   $('skip-button').disabled = state.status === 'complete';
   for (const button of document.querySelectorAll('[data-mode]')) {
     button.classList.toggle('active', button.dataset.mode === state.mode);
