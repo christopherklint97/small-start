@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { initialState, cleanDurations, start, pause, settle, reset, switchMode, advance, changeDurations, restore, remainingSeconds, formatTime, nextMode } from './timer.js';
+import { initialState, cleanDurations, start, pause, settle, reset, switchMode, advance, changeDurations, restore, remainingSeconds, bonusSeconds, formatTime, nextMode } from './timer.js';
 const T = 1_700_000_000_000;
 test('starts, pauses, resumes using wall time, including a sleeping tab', () => {
   const running = start(initialState(), T);
@@ -33,7 +33,7 @@ test('only completed focus rounds count and fourth gets long break', () => {
 });
 test('manual skip and reset do not award credit', () => {
   const running = start(initialState(), T);
-  const skipped = switchMode(running, 'short');
+  const skipped = switchMode(running, 'short', T + 10_000);
   assert.deepEqual(skipped.completed, []);
   assert.equal(reset(skipped).remaining, 300);
   assert.equal(advance(running), running);
@@ -52,9 +52,40 @@ test('validates durations and preserves a running round duration', () => {
 test('restores expired rounds once and tolerates corrupt storage', () => {
   const running = start(initialState({ focus: 2, short: 1, long: 5 }), T);
   const restored = restore(JSON.stringify(running), T + 200_000);
-  assert.equal(restored.state.status, 'complete');
+  assert.equal(restored.state.status, 'overtime');
   assert.deepEqual(restored.state.completed, [T + 120_000]);
   assert.equal(restore(JSON.stringify(restored.state), T + 500_000).state.completed.length, 1);
   assert.equal(restore('{nope').state.status, 'idle');
   assert.equal(restore(JSON.stringify({ ...running, completed: ['oops'], captures: [{ id: 1, text: '<script>' }] }), T + 20_000).state.captures[0].text, '<script>');
+});
+
+test('focus keeps counting bonus time after zero, survives reload and pause, and credits once', () => {
+  const running = start(initialState({ focus: 2, short: 1, long: 5 }), T);
+  const atZero = settle(running, T + 120_000);
+  assert.equal(atZero.completed, true);
+  assert.equal(atZero.state.status, 'overtime');
+  assert.equal(atZero.state.completed.length, 1);
+  assert.equal(bonusSeconds(atZero.state, T + 151_000), 31);
+  assert.equal(settle(atZero.state, T + 160_000).state.completed.length, 1);
+  const restored = restore(JSON.stringify(running), T + 151_000);
+  assert.equal(restored.state.status, 'overtime');
+  assert.equal(bonusSeconds(restored.state, T + 151_000), 31);
+  const paused = pause(restored.state, T + 151_000);
+  assert.equal(paused.status, 'paused-overtime');
+  assert.equal(bonusSeconds(paused, T + 500_000), 31);
+  const resumed = start(paused, T + 500_000);
+  assert.equal(bonusSeconds(resumed, T + 504_000), 35);
+  assert.equal(restore(JSON.stringify(resumed), T + 504_000).state.completed.length, 1);
+  assert.equal(advance(resumed).mode, 'short');
+  assert.equal(reset(resumed).completed.length, 1);
+  assert.deepEqual(reset(running, T + 120_001).completed, [T + 120_000], 'late reset still credits the finished focus round');
+  const skippedLate = switchMode(running, 'short', T + 120_001);
+  assert.deepEqual(skippedLate.completed, [T + 120_000], 'late mode switch also credits the round');
+});
+
+test('breaks still stop at zero rather than accruing bonus time', () => {
+  const breakRound = start(switchMode(initialState(), 'short'), T);
+  const done = settle(breakRound, breakRound.endsAt + 30_000);
+  assert.equal(done.state.status, 'complete');
+  assert.equal(done.state.remaining, 0);
 });

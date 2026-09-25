@@ -1,4 +1,4 @@
-import { initialState, restore, start, pause, reset, switchMode, advance, settle, changeDurations, remainingSeconds, formatTime, nextMode } from './timer.js';
+import { initialState, restore, start, pause, reset, switchMode, advance, settle, changeDurations, remainingSeconds, bonusSeconds, formatTime, nextMode } from './timer.js';
 
 const STORAGE_KEY = 'small-start:v1';
 const $ = id => document.getElementById(id);
@@ -44,7 +44,7 @@ async function notifyCompletion(mode) {
   }
 }
 async function syncWakeLock() {
-  if (state.status !== 'running') {
+  if (state.status !== 'running' && state.status !== 'overtime') {
     if (wakeLock) { try { await wakeLock.release(); } catch {} wakeLock = null; }
     return;
   }
@@ -55,27 +55,31 @@ async function syncWakeLock() {
 function tick() {
   const before = state.mode;
   const outcome = settle(state);
-  if (outcome.state !== state) { state = outcome.state; save(); notifyCompletion(before); syncWakeLock(); announce(before === 'focus' ? 'Focus round complete. Take a break.' : 'Break complete. Your next step is ready.'); }
-  renderTimer(); renderUrge();
+  if (outcome.state !== state) { state = outcome.state; save(); notifyCompletion(before); syncWakeLock(); announce(before === 'focus' ? 'Focus round complete. Keep going or take a break.' : 'Break complete. Your next step is ready.'); render(); }
+  else renderTimer();
+  renderUrge();
 }
 function renderTimer() {
   const seconds = remainingSeconds(state);
   const duration = state.roundDuration;
-  $('time-display').textContent = formatTime(seconds);
+  const overtime = state.status === 'overtime' || state.status === 'paused-overtime';
+  $('time-display').textContent = overtime ? `+${formatTime(bonusSeconds(state))}` : formatTime(seconds);
   $('ring-progress').style.strokeDashoffset = String(ringLength * (1 - Math.min(1, seconds / duration)));
   $('timer-overline').textContent = state.mode === 'focus' ? 'TIME TO FOCUS' : 'TIME TO RESET';
-  $('timer-caption').textContent = state.status === 'complete' ? 'You showed up.' : state.mode === 'focus' ? 'Just this one step.' : 'Step away from the feed.';
-  $('round-label').textContent = `ROUND ${state.completed.length % 4 + (state.mode === 'focus' ? 1 : 0) || 4} OF 4`;
-  const action = state.status === 'running' ? 'Pause' : state.status === 'paused' ? 'Keep going' : state.status === 'complete' ? `Start ${nextMode(state) === 'focus' ? 'next focus' : nextMode(state) === 'long' ? 'long break' : 'short break'}` : state.mode === 'focus' ? 'Start focusing' : 'Start break';
+  $('timer-caption').textContent = overtime ? 'Bonus focus time.' : state.status === 'complete' ? 'You showed up.' : state.mode === 'focus' ? 'Just this one step.' : 'Step away from the feed.';
+  const focusFinished = state.mode === 'focus' && (overtime || state.status === 'complete');
+  $('round-label').textContent = `ROUND ${focusFinished ? (state.completed.length - 1) % 4 + 1 : state.completed.length % 4 + (state.mode === 'focus' ? 1 : 0) || 4} OF 4`;
+  const action = state.status === 'running' || state.status === 'overtime' ? 'Pause' : state.status === 'paused' || state.status === 'paused-overtime' ? 'Keep going' : state.status === 'complete' ? `Start ${nextMode(state) === 'focus' ? 'next focus' : nextMode(state) === 'long' ? 'long break' : 'short break'}` : state.mode === 'focus' ? 'Start focusing' : 'Start break';
   $('main-action-label').textContent = action;
   $('reset-button').disabled = false;
+  $('skip-button').textContent = overtime ? 'Take break' : 'Skip';
   $('skip-button').disabled = state.status === 'complete';
   for (const button of document.querySelectorAll('[data-mode]')) {
     button.classList.toggle('active', button.dataset.mode === state.mode);
     button.setAttribute('aria-pressed', String(button.dataset.mode === state.mode));
-    button.disabled = state.status === 'running' || state.status === 'paused';
+    button.disabled = state.status === 'running' || state.status === 'paused' || overtime;
   }
-  document.title = state.status === 'running' ? `${formatTime(seconds)} · ${labels[state.mode]} — Small Start` : 'Small Start — focus without the pressure';
+  document.title = state.status === 'running' || state.status === 'overtime' ? `${$('time-display').textContent} · ${labels[state.mode]} — Small Start` : 'Small Start — focus without the pressure';
 }
 function renderCaptures() {
   const list = $('capture-list'); list.replaceChildren();
@@ -101,14 +105,14 @@ function renderUrge() {
   if (seconds === 0) { urgeEndsAt = null; $('urge-panel').querySelector('p').textContent = 'The pause is over. Choose deliberately: return to your step, rest, or do something else.'; $('urge-time').textContent = '00:00'; }
 }
 $('main-action').addEventListener('click', () => {
-  if (state.status === 'running') { update(pause(state)); announce('Paused. Pick up when you’re ready.'); }
+  if (state.status === 'running' || state.status === 'overtime') { update(pause(state)); announce('Paused. Pick up when you’re ready.'); }
   else if (state.status === 'complete') { update(start(advance(state))); announce(state.mode === 'focus' ? 'One small step is enough.' : 'Take a real break.'); }
   else { update(start(state)); announce(state.mode === 'focus' ? 'One small step is enough.' : 'Take a real break.');
     if (state.sound) { try { audioContext ||= new (window.AudioContext || window.webkitAudioContext)(); audioContext.resume(); } catch {} }
   }
 });
 $('reset-button').addEventListener('click', () => { update(reset(state)); announce('Reset. Start again whenever you like.'); });
-$('skip-button').addEventListener('click', () => { update(switchMode(state, nextMode(state))); announce('Skipped. No penalty.'); });
+$('skip-button').addEventListener('click', () => { const current = settle(state).state; const overtime = current.status === 'overtime' || current.status === 'paused-overtime'; update(switchMode(current, nextMode(current))); announce(overtime ? 'Nice extra focus. Take a break.' : 'Skipped. No penalty.'); });
 for (const button of document.querySelectorAll('[data-mode]')) button.addEventListener('click', () => { update(switchMode(state, button.dataset.mode)); announce(`${labels[state.mode]} selected.`); });
 $('task-input').addEventListener('input', event => { state = { ...state, task: event.target.value }; save(); });
 $('tiny-step').addEventListener('click', () => {

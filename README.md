@@ -5,7 +5,7 @@ A calm, installable Pomodoro-style focus timer designed to make starting easier.
 ## Features
 
 - Adjustable focus, short-break, and long-break intervals (25/5/15 minutes by default); a two-minute start option.
-- Wall-clock-based timer that survives refreshes and background tabs, with pause, reset, skip, and explicit next-round starts. A long break follows four completed focus rounds.
+- Wall-clock-based timer that survives refreshes and background tabs. Focus keeps counting as `+MM:SS` bonus time after zero, with pause, reset, and a manual **Take break** action; breaks still stop at zero. A long break follows four completed focus rounds.
 - One small next-action field, a parking lot for distracting thoughts, and a 60-second pause before an impulsive scroll.
 - Optional completion sound and notifications while the page is running; offline shell, installable manifest, local fonts and icons, and responsive layout.
 - State is stored in this browser's `localStorage`, on this device only. Clearing site data erases it.

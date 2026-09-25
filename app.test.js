@@ -37,7 +37,7 @@ test('completed round at zero can be reset in the UI', async () => {
     roundDuration: 120, endsAt: now - 1000, durations: { focus: 2, short: 1, long: 5 },
     completed: [], task: '', captures: [], sound: false }));
   await import(`./app.js?test=reset-${now}`);
-  assert.equal(app.node('time-display').textContent, '00:00');
+  assert.match(app.node('time-display').textContent, /^\+\d\d:\d\d$/);
   assert.equal(app.node('reset-button').disabled, false, 'reset should be usable after completion');
   app.node('reset-button').listeners.click();
   assert.equal(app.node('time-display').textContent, '02:00');
@@ -61,4 +61,43 @@ test('completion uses the service worker notification API on mobile', async () =
   finally { Date.now = realNow; }
   assert.equal(notifications.length, 1);
   assert.equal(notifications[0][0], 'Focus round complete');
+});
+
+test('focus UI shows bonus after zero and offers a break without losing credit', async () => {
+  const now = Date.now();
+  const app = setup(JSON.stringify({ mode: 'focus', status: 'running', remaining: 120,
+    roundDuration: 120, endsAt: now + 1000, durations: { focus: 2, short: 1, long: 5 },
+    completed: [], task: '', captures: [], sound: false }));
+  await import(`./app.js?test=overtime-${now}`);
+  const realNow = Date.now;
+  Date.now = () => now + 32_000;
+  try {
+    app.tick();
+    assert.equal(app.node('time-display').textContent, '+00:31');
+    assert.equal(app.node('timer-caption').textContent, 'Bonus focus time.');
+    assert.equal(app.node('main-action-label').textContent, 'Pause');
+    assert.equal(app.node('skip-button').textContent, 'Take break');
+    app.node('main-action').listeners.click();
+    assert.equal(app.node('time-display').textContent, '+00:31');
+    Date.now = () => now + 92_000;
+    app.tick();
+    assert.equal(app.node('time-display').textContent, '+00:31');
+    app.node('skip-button').listeners.click();
+    assert.equal(JSON.parse(localStorage.value).mode, 'short');
+    assert.equal(JSON.parse(localStorage.value).completed.length, 1);
+  } finally { Date.now = realNow; }
+});
+
+test('a late break tap still awards the fourth focus round and chooses a long break', async () => {
+  const now = Date.now();
+  const app = setup(JSON.stringify({ mode: 'focus', status: 'running', remaining: 120,
+    roundDuration: 120, endsAt: now + 1000, durations: { focus: 2, short: 1, long: 5 },
+    completed: [now - 600_000, now - 400_000, now - 200_000], task: '', captures: [], sound: false }));
+  await import(`./app.js?test=late-break-${now}`);
+  const realNow = Date.now;
+  Date.now = () => now + 2000;
+  try { app.node('skip-button').listeners.click(); }
+  finally { Date.now = realNow; }
+  assert.equal(JSON.parse(localStorage.value).mode, 'long');
+  assert.equal(JSON.parse(localStorage.value).completed.length, 4);
 });
